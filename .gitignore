@@ -1,0 +1,13 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+
+# Local database
+workouts.db
+
+# OS files
+.DS_Store
+
+# Editor
+.vscode/
