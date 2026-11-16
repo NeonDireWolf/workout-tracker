@@ -1,11 +1,11 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, render_template
 from database import get_connection
 
 app = Flask(__name__)
 
 @app.route("/")
 def home():
-    return jsonify({"status": "ok", "message": "Workout tracker API is running."})
+    return render_template("index.html")
 
 @app.route("/exercises")
 def list_exercises():
