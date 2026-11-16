@@ -222,3 +222,23 @@ def add_set(exercise_id):
         "rest_seconds": rest_seconds,
         "set_order": set_order
     }), 201
+
+@app.route("/workouts")
+def get_workouts():
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT id, date, is_template FROM workouts ORDER BY date DESC;")
+    rows = cursor.fetchall()
+
+    conn.close()
+
+    workouts = []
+    for row in rows:
+        workouts.append({
+            "id": row[0],
+            "date": row[1],
+            "is_template": row[2]
+        })
+
+    return jsonify(workouts) 
