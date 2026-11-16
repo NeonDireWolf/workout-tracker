@@ -146,9 +146,79 @@ def get_workout(workout_id):
                 "rpe": s_row[4],
                 "rest_seconds": s_row[5]
             })
-            
+
         workout["exercises"].append(exercise)
 
     conn.close()
     return jsonify(workout)
-    
+
+
+@app.route("/workouts/<int:workout_id>/exercises", methods=["POST"])
+def add_exercise(workout_id):
+    data = request.get_json()
+
+    library_id = data.get("library_id") if data else None
+    notes = data.get("notes") if data else None
+
+    if library_id is None:
+        return jsonify({"error": "Missing library_id"}), 400
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "INSERT INTO exercises (workout_id, library_id, notes) VALUES (?, ?, ?);",
+        (workout_id, library_id, notes)
+    )
+    new_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+
+    return jsonify({
+        "id": new_id,
+        "workout_id": workout_id,
+        "library_id": library_id,
+        "notes": notes
+    }), 201 
+
+@app.route("/exercises/<int:exercise_id>/sets", methods=["POST"])
+def add_set(exercise_id):
+    data = request.get_json()
+
+    reps = data.get("reps") if data else None
+    weight = data.get("weight") if data else None
+    rpe = data.get("rpe") if data else None
+    rest_seconds = data.get("rest_seconds") if data else None 
+
+    if reps is None or weight is None or rpe is None:
+        return jsonify({"error": "Missing required fields: reps, weight, and rpe are required."}), 400
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "SELECT COUNT(*) FROM sets WHERE exercise_id = ?;",
+        (exercise_id,)
+    )
+    count_row = cursor.fetchone()
+
+    existing_count = count_row[0]
+    set_order = existing_count + 1
+
+    cursor.execute(
+        "INSERT INTO sets (exercise_id, reps, weight, rpe, rest_seconds, set_order) VALUES (?, ?, ?, ?, ?, ?);",
+        (exercise_id, reps, weight, rpe, rest_seconds, set_order)
+    )
+    new_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+
+    return jsonify({
+        "id": new_id,
+        "exercise_id": exercise_id,
+        "reps": reps,
+        "weight": weight,
+        "rpe": rpe,
+        "rest_seconds": rest_seconds,
+        "set_order": set_order
+    }), 201
