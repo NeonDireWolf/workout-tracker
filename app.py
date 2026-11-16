@@ -242,3 +242,65 @@ def get_workouts():
         })
 
     return jsonify(workouts) 
+
+@app.route("/sets/<int:set_id>", methods=["DELETE"])
+def delete_set(set_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT id FROM sets WHERE id=?;", (set_id,))
+
+    if cursor.fetchone() is None:
+        conn.close()
+        return jsonify({"error": "Set not found"}), 404
+
+    cursor.execute("DELETE FROM sets WHERE id=?;", (set_id,))
+
+    conn.commit()
+    conn.close()
+
+    return "", 204
+
+@app.route("/exercises/<int:exercise_id>", methods=["DELETE"])
+def delete_exercise(exercise_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT id FROM exercises WHERE id=?;", (exercise_id,))
+
+    if cursor.fetchone() is None:
+        conn.close()
+        return jsonify({"error": "Exercise not found"}), 404
+
+    cursor.execute("DELETE FROM sets WHERE exercise_id = ?;", (exercise_id,))
+    cursor.execute("DELETE FROM exercises WHERE id = ?;", (exercise_id,))
+
+    conn.commit()
+    conn.close()
+
+    return "", 204
+
+@app.route("/workouts/<int:workout_id>", methods=["DELETE"])
+def delete_workout(workout_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT id FROM workouts WHERE id=?;", (workout_id,))
+
+    if cursor.fetchone() is None:
+        conn.close()
+        return jsonify({"error": "Workout not found"}), 404
+
+    cursor.execute("""
+        DELETE FROM sets 
+        WHERE exercise_id IN (
+            SELECT id FROM exercises WHERE workout_id = ?
+        );
+    """, (workout_id,))
+    cursor.execute("DELETE FROM exercises WHERE workout_id = ?;", (workout_id,))
+    cursor.execute("DELETE FROM workouts WHERE id = ?;", (workout_id,))
+
+    conn.commit()
+    conn.close()
+
+    return "", 204
