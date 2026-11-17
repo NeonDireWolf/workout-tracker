@@ -41,6 +41,7 @@ def create_tables():
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS workouts (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT,
             date TEXT,
             is_template INTEGER DEFAULT 0
         );
@@ -140,4 +141,4 @@ if __name__ == "__main__":
     create_tables()
     # seed_library()
     print("Done.")
-    print(find_exercise_by_name("Bench Dips"))
+    

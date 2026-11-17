@@ -10,6 +10,19 @@
     <h1>Workout Tracker</h1>
     <p id="status">Loading...</p>
     <ul id="workout-list"></ul>
+    <form id="new-workout-form">
+        <h2>Log a new workout</h2>
+        <label>
+            Name:
+            <input type="text" name="name" placeholder="Push Day, Pull Day, etc.">
+        </label>
+        <label>
+            Date:
+            <input type="date" name="date" required>
+        </label>
+        <button type="submit">Save</button>
+    </form>
+    <div id="workout-detail"></div>
     <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>

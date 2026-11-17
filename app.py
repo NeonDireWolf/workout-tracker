@@ -72,13 +72,14 @@ def create_workout():
 
     date = data["date"]
     is_template = data.get("is_template", 0)
+    name = data.get("name")
 
     # Inserts the new workout
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute(
-        "INSERT INTO workouts (date, is_template) VALUES (?, ?);",
-        (date, is_template)
+        "INSERT INTO workouts (date, is_template, name) VALUES (?, ?, ?);",
+        (date, is_template, name)
     )
     new_id = cursor.lastrowid
     conn.commit()
@@ -88,7 +89,8 @@ def create_workout():
     return jsonify({
         "id": new_id,
         "date": date,
-        "is_template": is_template
+        "is_template": is_template,
+        "name": name
     }), 201
 
 @app.route("/workouts/<int:workout_id>")
@@ -97,7 +99,7 @@ def get_workout(workout_id):
     cursor = conn.cursor()
 
     cursor.execute(
-        "SELECT id, date, is_template FROM workouts WHERE id = ?;",
+        "SELECT id, name, date, is_template FROM workouts WHERE id = ?;",
         (workout_id,)
     )
     workout_row = cursor.fetchone()
@@ -107,13 +109,23 @@ def get_workout(workout_id):
 
     workout = {
         "id": workout_row[0],
-        "date": workout_row[1],
-        "is_template": workout_row[2],
+        "name": workout_row[1],
+        "date": workout_row[2],
+        "is_template": workout_row[3],
         "exercises": []
     }
 
     cursor.execute(
-        "SELECT id, library_id, notes FROM exercises WHERE workout_id = ?;",
+        """
+        SELECT
+            exercises.id,
+            exercises.library_id,
+            exercises.notes,
+            exercise_library.name
+        FROM exercises
+        JOIN exercise_library ON exercises.library_id = exercise_library.id
+        WHERE exercises.workout_id = ?;
+        """,
         (workout_id,)
     )
     exercise_rows = cursor.fetchall()
@@ -123,6 +135,7 @@ def get_workout(workout_id):
             "id": ex_row[0],
             "library_id": ex_row[1],
             "notes": ex_row[2],
+            "name": ex_row[3],
             "sets": []
         }
 
@@ -228,7 +241,7 @@ def get_workouts():
     conn = get_connection()
     cursor = conn.cursor()
 
-    cursor.execute("SELECT id, date, is_template FROM workouts ORDER BY date DESC;")
+    cursor.execute("SELECT id, name, date, is_template FROM workouts ORDER BY date DESC;")
     rows = cursor.fetchall()
 
     conn.close()
@@ -237,8 +250,9 @@ def get_workouts():
     for row in rows:
         workouts.append({
             "id": row[0],
-            "date": row[1],
-            "is_template": row[2]
+            "name": row[1],
+            "date": row[2],
+            "is_template": row[3]
         })
 
     return jsonify(workouts) 
