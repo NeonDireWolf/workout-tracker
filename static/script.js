@@ -27,16 +27,160 @@ function renderWorkoutDetail(workout) {
         exercise.sets.forEach(s => {
             const setLi = document.createElement("li");
             // Format each set as weight * reps @ RPE
-            setLi.textContent = `${s.weight} lbs x ${s.reps} reps @ RPE ${s.rpe}`;
+            if (s.rpe) {
+                setLi.textContent = `${s.weight} lbs x ${s.reps} reps @ RPE ${s.rpe}`;
+            }
+            else {
+                setLi.textContent = `${s.weight} lbs x ${s.reps} reps`;
+            }
             setList.appendChild(setLi);
         });
 
         // Attach the set list to the exercise section
         exSection.appendChild(setList);
 
+        // Button to show the add set form
+        const addSetButton = document.createElement("button");
+        addSetButton.textContent = "Add Set";
+        exSection.appendChild(addSetButton);
+
+        // Form that's hidden until clicked
+        const setForm = document.createElement("form");
+        setForm.style.display = "none";
+
+        const weightInput = document.createElement("input");
+        weightInput.type = "number";
+        weightInput.placeholder = "Weight (lbs)";
+        weightInput.step = "0.5";
+        weightInput.required = true;
+        setForm.appendChild(weightInput);
+
+        const repsInput = document.createElement("input");
+        repsInput.type = "number";
+        repsInput.placeholder = "Reps";
+        repsInput.required = true;
+        setForm.appendChild(repsInput);
+
+        const rpeInput = document.createElement("input");
+        rpeInput.type = "number";
+        rpeInput.placeholder = "RPE (optional)";
+        rpeInput.step = "0.5";
+        rpeInput.min = "1";
+        rpeInput.max = "10";
+        setForm.appendChild(rpeInput);
+
+        const setSubmit = document.createElement("button");
+        setSubmit.type = "submit";
+        setSubmit.textContent = "Save Set";
+        setForm.appendChild(setSubmit);
+
+        exSection.appendChild(setForm);
+
+        // Clicking on add set reveals the form and will focus on the first input
+        addSetButton.addEventListener("click", () => {
+            setForm.style.display = "block";
+            weightInput.focus();
+        });
+
+        // Handle the submit
+        setForm.addEventListener("submit", (event) => {
+            event.preventDefault();
+
+            // Build the body and only includes RPE if the user entered 
+            const body = {
+                weight: parseFloat(weightInput.value),
+                reps: parseInt(repsInput.value)
+            };
+            if (rpeInput.value) {
+                body.rpe = parseFloat(rpeInput.value);
+            }
+
+            fetch(`/exercises/${exercise.id}/sets`, {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify(body)
+            })
+                .then(response => response.json())
+                .then(() => {
+                    // Refresh to show the new set
+                    fetch(`/workouts/${workout.id}`)
+                        .then(r => r.json())
+                        .then(detail => renderWorkoutDetail(detail));
+                })
+                .catch(error => console.error("Failed to log set:", error));
+        });
+
         // Attach the whole exercise section to the detail div
         detail.appendChild(exSection);
     });
+
+    // Build the "Add exercise" section 
+    const addSection = document.createElement("div");
+
+    const addHeader = document.createElement("h3");
+    addHeader.textContent = "Add an exercise";
+    addSection.appendChild(addHeader);
+
+    // Search input for filtering the exercise library
+    const searchInput = document.createElement("input");
+    searchInput.type = "text";
+    searchInput.placeholder = "Search exercises (e.g. bench)";
+    addSection.appendChild(searchInput);
+
+    // Empty list that will fill with matching exercises
+    const resultsList = document.createElement("ul");
+    addSection.appendChild(resultsList);
+
+    // When the user types fetch matching exercises from the API
+    searchInput.addEventListener("input", () => {
+        const query = searchInput.value.trim();
+
+        // Don't search for empty strings 
+        if (query.length < 2) {
+            resultsList.innerHTML = "";
+            return;
+        }
+
+        fetch(`/exercises?search=${encodeURIComponent(query)}`)
+            .then(response => response.json())
+            .then(matches => {
+                // Clear out old results before showing the new ones
+                resultsList.innerHTML = "";
+
+                // Cap it at 10 so it's not overwhelming
+                matches.slice(0, 10).forEach(ex => {
+                    const li = document.createElement("li");
+                    li.textContent = ex.name;
+                    li.style.cursor = "pointer";
+
+                    // When clicked POST to add this exercise to the workout
+                    li.addEventListener("click", () => {
+                        addExerciseToWorkout(workout.id, ex.id);
+                    });
+
+                    resultsList.appendChild(li);
+                });
+            });
+    });
+
+    detail.appendChild(addSection);
+}
+
+// POST to add an exercise to a workout and refresh the detail section
+function addExerciseToWorkout(workoutId, libraryId) {
+    fetch(`/workouts/${workoutId}/exercises`, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({library_id: libraryId})
+    })
+        .then(response => response.json())
+        .then(() => {
+            // Reloads the detail view to show the new exercise 
+            fetch(`/workouts/${workoutId}`)
+                .then(r => r.json())
+                .then(detail => renderWorkoutDetail(detail));
+        })
+        .catch(error => console.error("Failed to add exercise:", error));
 }
 
 // When the page is loaded, fetch the list of workouts from the API

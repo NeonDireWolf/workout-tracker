@@ -9,12 +9,22 @@ def home():
 
 @app.route("/exercises")
 def list_exercises():
+    # Read the optional ?search=foo query parameter from the URL
+    search = request.args.get("search", "")
+
     conn = get_connection()
     cursor = conn.cursor()
 
-    cursor.execute("SELECT id, name, category, equipment FROM exercise_library;")
-    rows = cursor.fetchall()
+    if search:
+        # Filter by the name using SQL LIKE 
+        cursor.execute("SELECT id, name, category, equipment FROM exercise_library WHERE name LIKE ? ORDER BY name;",
+                       (f"%{search}%",)
+        )
+    else:
+        # No search: return all ordered by name
+        cursor.execute("SELECT id, name, category, equipment FROM exercise_library ORDER BY name;")
 
+    rows = cursor.fetchall()
     conn.close()
 
     # Converts each row into a dict for JSON output
@@ -203,8 +213,8 @@ def add_set(exercise_id):
     rpe = data.get("rpe") if data else None
     rest_seconds = data.get("rest_seconds") if data else None 
 
-    if reps is None or weight is None or rpe is None:
-        return jsonify({"error": "Missing required fields: reps, weight, and rpe are required."}), 400
+    if reps is None or weight is None:
+        return jsonify({"error": "Missing required fields: reps and weight are required"}), 400
 
     conn = get_connection()
     cursor = conn.cursor()
