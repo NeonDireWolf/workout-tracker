@@ -1,0 +1,24 @@
+:root {
+    --bg: #1A1A1A;
+    --surface: #262626;
+    --text: #E5E5E5;
+    --text-muted: #9CA3AF;
+    --accent: #2563EB;
+    --danger: #EF4444;
+}
+
+body {
+    background-color: var(--bg);
+    color: var(--text);
+}
+
+button {
+    background-color: var(--accent);
+}
+
+.delete-btn {
+    background-color: var(--danger);
+    font-size: 0.85rem;
+    padding: 0.25rem 0.5rem;
+    width: auto;
+}

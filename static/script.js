@@ -25,6 +25,7 @@ function renderWorkoutDetail(workout) {
         // Delete button for the exercise
         const deleteExBtn = document.createElement("button");
         deleteExBtn.textContent = "Delete Exercise";
+        deleteExBtn.className = "delete-btn";
         deleteExBtn.style.marginLeft = "10px";
         exSection.appendChild(deleteExBtn);
 
@@ -61,6 +62,7 @@ function renderWorkoutDetail(workout) {
             // Delete button for sets
             const deleteSetBtn = document.createElement("button");
             deleteSetBtn.textContent = "Delete";
+            deleteSetBtn.className = "delete-btn";
             deleteSetBtn.style.marginLeft = "10px";
             setLi.appendChild(deleteSetBtn);
 
@@ -249,6 +251,7 @@ fetch("/workouts")
             // Delete button next to the name
             const deleteBtn = document.createElement("button");
             deleteBtn.textContent = "Delete";
+            deleteBtn.className = "delete-btn";
             deleteBtn.style.marginLeft = "10px";
             li.appendChild(deleteBtn);
 
