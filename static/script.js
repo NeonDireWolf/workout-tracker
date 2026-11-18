@@ -4,7 +4,7 @@ function renderWorkoutDetail(workout) {
     // Grab the container div where details will be rendered 
     const detail = document.getElementById("workout-detail");
 
-    // Wipes anything previously rendered so we don't stack details
+    // Wipes anything previously rendered so it doesn't stack details
     detail.innerHTML = "";
 
     // Build the workout title 
@@ -22,6 +22,30 @@ function renderWorkoutDetail(workout) {
         exHeader.textContent = exercise.name;
         exSection.appendChild(exHeader);
 
+        // Delete button for the exercise
+        const deleteExBtn = document.createElement("button");
+        deleteExBtn.textContent = "Delete Exercise";
+        deleteExBtn.style.marginLeft = "10px";
+        exSection.appendChild(deleteExBtn);
+
+        deleteExBtn.addEventListener("click", () => {
+            const sure = confirm(`Delete "${exercise.name}" and all its sets?`);
+            if (!sure) return;
+
+            fetch(`/exercises/${exercise.id}`, {method: "DELETE"})
+                .then(response => {
+                    if (response.status === 204) {
+                        // Refreshes detail view
+                        fetch(`/workouts/${workout.id}`)
+                            .then(r => r.json())
+                            .then(detail => renderWorkoutDetail(detail));
+                    }
+                    else {
+                        console.error("Failed to delete exercise:", response.status);
+                    }
+                });
+        });
+
         // Build a bulleted list of the sets for this exercise
         const setList = document.createElement("ul");
         exercise.sets.forEach(s => {
@@ -33,6 +57,30 @@ function renderWorkoutDetail(workout) {
             else {
                 setLi.textContent = `${s.weight} lbs x ${s.reps} reps`;
             }
+
+            // Delete button for sets
+            const deleteSetBtn = document.createElement("button");
+            deleteSetBtn.textContent = "Delete";
+            deleteSetBtn.style.marginLeft = "10px";
+            setLi.appendChild(deleteSetBtn);
+
+            deleteSetBtn.addEventListener("click", () => {
+                const sure = confirm("Delete this set?");
+                if (!sure) return;
+
+                fetch(`/sets/${s.id}`, {method: "DELETE"})
+                    .then(response => {
+                        if (response.status === 204) {
+                            fetch(`/workouts/${workout.id}`)
+                                .then(r => r.json())
+                                .then(detail => renderWorkoutDetail(detail));
+                        }
+                        else {
+                            console.error("Failed to delete set:", response.status);
+                        }
+                    });
+            });
+            
             setList.appendChild(setLi);
         });
 
@@ -190,15 +238,43 @@ fetch("/workouts")
         const list = document.getElementById("workout-list");
         data.forEach(workout => {
             const li = document.createElement("li");
+
+            // Name is a clickable span so it is separate from the delete button
+            const nameSpan = document.createElement("span");
             const displayName = workout.name || "Untitled workout";
-            li.textContent = `${workout.date} - ${displayName}`;
-            li.addEventListener("click", () => {
+            nameSpan.textContent = `${workout.date} - ${displayName}`;
+            nameSpan.style.cursor = "pointer";
+            li.appendChild(nameSpan);
+
+            // Delete button next to the name
+            const deleteBtn = document.createElement("button");
+            deleteBtn.textContent = "Delete";
+            deleteBtn.style.marginLeft = "10px";
+            li.appendChild(deleteBtn);
+
+            // Clicking on the name loads the detail view
+            nameSpan.addEventListener("click", () => {
                 fetch(`/workouts/${workout.id}`)
-                .then(response => response.json())
-                .then(detail => {
-                    renderWorkoutDetail(detail);
-                });
+                    .then(response => response.json())
+                    .then(detail => renderWorkoutDetail(detail));
             });
+
+            // Clicking Delete removes the workout after asking for confirmation
+            deleteBtn.addEventListener("click", () => {
+                const sure = confirm(`Delete "${displayName}"? This cannot be undone.`);
+                if (!sure) return;
+
+                fetch(`/workouts/${workout.id}`, {method: "DELETE"})
+                    .then(response => {
+                        if (response.status === 204) {
+                            window.location.reload();
+                        }
+                        else {
+                            console.error("Failed to delete:", response.status);
+                        }
+                    });
+            });
+
             list.appendChild(li);
         });
         document.getElementById("status").textContent = `${data.length} workouts logged.`;
